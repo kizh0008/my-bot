@@ -1,58 +1,52 @@
-import logging
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-# Set up logging to get debug information
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Your bot's token (replace it with your actual token)
+TOKEN = "7029993087:AAFiIEh_4b7Re4sKkyDVS_vReDRypdV_fS8"
 
-# Your bot token
-TOKEN = '7029993087:AAFiIEh_4b7Re4sKkyDVS_vReDRypdV_fS8'
+# Define the start command handler
+async def start(update: Update, context):
+    """Handle the /start command."""
+    await update.message.reply_text("Hello! I'm your group chatbot. Type 'hello', 'ca', 'website', or 'rug' to test me.")
 
-# Start command to reply when the bot starts
-async def start(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text("Hello! I'm your friendly bot.")
+# Define the message handler for 'hello' and 'hi'
+async def greet(update: Update, context):
+    """Handle 'hi' or 'hello' messages."""
+    user_name = update.message.from_user.first_name
+    await update.message.reply_text(f"Hello, {user_name}! How can I help you today?")
 
-# Function to respond when someone says "hi" or "hello"
-async def greet_user(update: Update, context: CallbackContext) -> None:
-    if 'hi' in update.message.text.lower() or 'hello' in update.message.text.lower():
-        user_name = update.message.from_user.username
-        await update.message.reply_text(f"Hello, {user_name}!")
+# Define the message handler for 'ca'
+async def provide_link(update: Update, context):
+    """Provide the link when 'ca' is mentioned."""
+    await update.message.reply_text("Here is the link you requested: [Insert Your Link Here]")
 
-# Function to send the link when someone says "ca" or "website"
-async def send_link(update: Update, context: CallbackContext) -> None:
-    if 'ca' in update.message.text.lower() or 'website' in update.message.text.lower():
-        await update.message.reply_text("Here's the link: https://yourlink.com")
+# Define the message handler for 'rug' or 'rug pull'
+async def delete_rug_message(update: Update, context):
+    """Delete messages containing 'rug' or 'rug pull'."""
+    await update.message.delete()
+    await update.message.reply_text("Warning: 'rug' or 'rug pull' is not allowed!")
 
-# Function to delete messages containing "rug" or "rug pull"
-async def delete_rug_messages(update: Update, context: CallbackContext) -> None:
-    if 'rug' in update.message.text.lower() or 'rug pull' in update.message.text.lower():
-        await update.message.delete()
+# Define the message handler for 'website'
+async def provide_website_link(update: Update, context):
+    """Provide the website link when 'website' is mentioned."""
+    await update.message.reply_text("Visit our website here: [Insert Your Website Link Here]")
 
-# Main function to start the bot and add handlers
-async def main() -> None:
-    # Create the Application and pass the bot token
+# Main function to set up the bot
+async def main():
+    """Start the bot."""
     application = Application.builder().token(TOKEN).build()
 
-    # Command handlers
+    # Add handlers for commands and messages
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, greet))  # For general greetings like "hello"
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^ca$'), provide_link))  # 'ca' message
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^(rug|rug pull)$'), delete_rug_message))  # 'rug' or 'rug pull'
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^website$'), provide_website_link))  # 'website'
 
-    # Message handlers
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, greet_user))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, send_link))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, delete_rug_messages))
-
-    # Start the bot and keep it running
+    # Run the bot with long polling
     await application.run_polling()
 
-if __name__ == '__main__':
-    # Start the bot without using asyncio.run()
-    import sys
-    from telegram.ext import Application
-    try:
-        application = Application.builder().token(TOKEN).build()
-        application.run_polling()
-    except KeyboardInterrupt:
-        sys.exit(0)
-
+# Entry point
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
